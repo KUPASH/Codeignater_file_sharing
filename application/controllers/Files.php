@@ -6,11 +6,10 @@ class Files extends CI_Controller
     {
         parent::__construct();
         $this->load->database();
+        session_start();
     }
     public function filesharing()
     {
-        session_start();
-
         function generateKey() {
             $imageKey = '';
             $keyLength = 8;
@@ -76,8 +75,6 @@ class Files extends CI_Controller
     }
     public function delete()
     {
-        session_start();
-
         if(isset($_SESSION['id']) && isset($_SESSION['login'])) {
             $num_string = $this->input->get('del');
             $sql = $this->db->select('*')->
@@ -104,7 +101,6 @@ class Files extends CI_Controller
     }
     public function download()
     {
-        session_start();
         if(isset($_SESSION['id']) && isset($_SESSION['login'])) {
             $name = $this->input->get('name');
             $sql = $this->db->select('*')->
@@ -133,7 +129,6 @@ class Files extends CI_Controller
 
     public function logout()
     {
-        session_start();
         session_unset();
         session_destroy();
         header('location: /auth');
