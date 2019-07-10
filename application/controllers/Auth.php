@@ -5,12 +5,13 @@ class Auth extends CI_Controller {
     {
         parent::__construct();
         $this->load->database();
+        $this->load->model('users_model');
     }
 
     public function index()
     {
         $this->load->view('header');
-        $this->load->view('auth/firstpage');
+        $this->load->view('/auth/firstpage');
         $this->load->view('footer');
     }
 
@@ -18,24 +19,30 @@ class Auth extends CI_Controller {
     {
         $login = $this->input->post('login');
         $password = $this->input->post('pass');
-        $sql = $this->db->select('*')->from('users')->where('login',$login)->get();
-        $user = $sql->result();
-        if (empty($user)) {
-            $salt = $this -> config -> item ('salt');
-            $saltedPassword = md5($password.$salt);
-            $data = ['login' => $login, 'password' => $saltedPassword];
-            $sql = $this->db->insert('users', $data);
+        if(!empty($login) && !empty($password)) {
+            $user = $this->users_model->getUserByLogin($login);
+            if (empty($user)) {
+                $salt = $this->config->item('salt');
+                $saltedPassword = md5($password . $salt);
+                $sql = $this->users_model->insertNewUser($login, $saltedPassword);
+            } else {
+                $error['nameErr'] = 'Login is already taken';
+
+                $this->load->view('header');
+                $this->load->view('/auth/firstpage', $error);
+                $this->load->view('footer');
+            }
         } else {
-            exit ('This login is already taken!');
+            $error['emptyRegPassLogErr'] = 'Login or password can not be empty!';
+
+            $this->load->view('header');
+            $this->load->view('/auth/firstpage', $error);
+            $this->load->view('footer');
         }
-//        } else {
-//            exit ('Fields cannot be empty');
-//        }
 
         $login = $this->input->post('login');
         $password = $this->input->post('pass');
-        $sql = $this->db->select('*')->from('users')->where('login',$login)->get();
-        $user = $sql->row_array();
+        $user = $this->users_model->getUserByLogin2($login);
         if (!empty($user)) {
             $salt = $this -> config -> item ('salt');
             $saltedPassword = md5($password . $salt);
@@ -46,30 +53,42 @@ class Auth extends CI_Controller {
                 header('location: /files/filesharing');
             }
         }
+
     }
     public function login()
     {
         $login = $this->input->post('login');
         $password = $this->input->post('pass');
-        $sql = $this->db->select('*')->from('users')->where('login',$login)->get();
-        $user = $sql->row_array();
-        if(!empty($user)) {
-            $salt = $this -> config -> item ('salt');
-            $saltedPassword = md5($password.$salt);
-            if($user['password'] == $saltedPassword) {
-                session_start();
-                $_SESSION['id'] = $user['id'];
-                $_SESSION['login'] = $user['login'];
-                header('location: /files/filesharing');
+        if(!empty($login) && !empty($password)) {
+            $user = $this->users_model->getUserByLogin2($login);
+            if (!empty($user)) {
+                $salt = $this->config->item('salt');
+                $saltedPassword = md5($password . $salt);
+                if ($user['password'] == $saltedPassword) {
+                    session_start();
+                    $_SESSION['id'] = $user['id'];
+                    $_SESSION['login'] = $user['login'];
+                    header('location: /files/filesharing');
+                } else {
+                    $error['passErr'] = 'Wrong password!';
+
+                    $this->load->view('header');
+                    $this->load->view('/auth/firstpage', $error);
+                    $this->load->view('footer');
+                }
             } else {
-                echo 'Wrong password!';
+                $error['loginErr'] = 'Invalid login, please, sign up';
+
+                $this->load->view('header');
+                $this->load->view('/auth/firstpage', $error);
+                $this->load->view('footer');
             }
         } else {
-            echo 'Invalid login, please, sign up';
-        }
-//        } else {
-//            echo 'Login or password can not be empty!';
-//        }
-    }
+            $error['emptyPassLogErr'] = 'Login or password can not be empty!';
 
+            $this->load->view('header');
+            $this->load->view('/auth/firstpage', $error);
+            $this->load->view('footer');
+        }
+    }
 }

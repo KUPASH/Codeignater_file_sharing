@@ -6,18 +6,20 @@ class Files extends CI_Controller
     {
         parent::__construct();
         $this->load->database();
+        $this->load->model('files_model');
         session_start();
+    }
+    private function generateKey()
+    {
+        $imageKey = '';
+        $keyLength = 8;
+        for($i=0; $i<$keyLength; $i++) {
+            $imageKey .= chr(mt_rand(33,126));
+        }
+        return $imageKey;
     }
     public function filesharing()
     {
-        function generateKey() {
-            $imageKey = '';
-            $keyLength = 8;
-            for($i=0; $i<$keyLength; $i++) {
-                $imageKey .= chr(mt_rand(33,126));
-            }
-            return $imageKey;
-        }
         $allowed_ext = ['jpg', 'jpeg'];
         if (isset($_FILES['userFile']) && $_FILES['userFile']['error'] == 0) {
             $realName = $_FILES['userFile']['name'];
@@ -53,21 +55,16 @@ class Files extends CI_Controller
                     $subdirname2 . '/' .
                     $filename . '.' . $ext)) {
 
-                    $imageKey = generateKey();
+                    $imageKey = $this->generateKey();
                     $filename = $filename . '.' . $ext;
-                    $data = ['real_name' => $realName,
-                        'hash_name' => $filename,
-                        'image_key' => $imageKey,
-                        'user_id' => $_SESSION['id']];
-                    $sql = $this->db->insert('files', $data);
+                    $sql = $this->files_model->insertNewFile($realName,$filename,$imageKey);
                 }
             }
         } else {
             echo 'Please Select file to Upload';
         }
 
-        $sql = $this->db->select('*')->from('files')->where('user_id',$_SESSION['id'])->get();
-        $row = $sql->result();
+        $row = $this->files_model->getAllFilesUser();
 
         $this->load->view('header');
         $this->load->view('files/filesharing', ['files' => $row]);
@@ -77,25 +74,12 @@ class Files extends CI_Controller
     {
         if(isset($_SESSION['id']) && isset($_SESSION['login'])) {
             $num_string = $this->input->get('del');
-            $sql = $this->db->select('*')->
-                            from('files')->
-                            where('user_id',$_SESSION['id'])->
-                            where('id',$num_string)->get();
-
-            $file = $sql->row_array();
+            $file = $this->files_model->getFileById($num_string);
             $fileway = './uploads/' . $file['hash_name'][0] . '/' . $file['hash_name'][1] . '/' . $file['hash_name'];
 
-            $sql = $this->db->delete('files',['user_id' => $_SESSION['id'], 'id' => $num_string]);
+            $sql = $this->files_model->deleteFileById($num_string);
 
-            $sql = $this->db->select('*')->
-            from('files')->
-            where('user_id',$_SESSION['id'])->
-            where('id',$num_string)->get();
-
-            $file = $sql->result();
-            if (empty($file)) {
-                unlink($fileway);
-            }
+            unlink($fileway);
         }
         header('Location: /files/filesharing');
     }
@@ -103,11 +87,7 @@ class Files extends CI_Controller
     {
         if(isset($_SESSION['id']) && isset($_SESSION['login'])) {
             $name = $this->input->get('name');
-            $sql = $this->db->select('*')->
-                                from('files')->
-                                where('user_id',$_SESSION['id'])->
-                                where('image_key',$name)->get();
-            $file = $sql->row_array();
+            $file = $this->files_model->getFileByShortName($name);
             if(!empty($file)) {
                 $realName = $file['real_name'];
                 $fileway = './uploads/' . $file['hash_name'][0] . '/' . $file['hash_name'][1] . '/' . $file['hash_name'];
