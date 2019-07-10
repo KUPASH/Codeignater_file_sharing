@@ -20,55 +20,57 @@ class Files extends CI_Controller
     }
     public function filesharing()
     {
-        $allowed_ext = ['jpg', 'jpeg'];
-        if (isset($_FILES['userFile']) && $_FILES['userFile']['error'] == 0) {
-            $realName = $_FILES['userFile']['name'];
-            $filename = md5(time() . rand(1, 9999) . $realName);
+        if(isset($_SESSION['id']) && isset($_SESSION['login'])) {
+            $allowed_ext = ['jpg', 'jpeg'];
+            if (isset($_FILES['userFile']) && $_FILES['userFile']['error'] == 0) {
+                $realName = $_FILES['userFile']['name'];
+                $filename = md5(time() . rand(1, 9999) . $realName);
 
-            $ext = explode('.', $_FILES['userFile']['name']);
-            $ext = $ext[count($ext) - 1];
+                $ext = explode('.', $_FILES['userFile']['name']);
+                $ext = $ext[count($ext) - 1];
 
-            if (!in_array($ext, $allowed_ext)) {
-                echo '<div style="color: red">ERROR: Invalid file extension; valid jpg, jpeg</div>';
-            } else {
+                if (!in_array($ext, $allowed_ext)) {
+                    echo '<div style="color: red">ERROR: Invalid file extension; valid jpg, jpeg</div>';
+                } else {
 
-                $subdirname1 = $filename[0];
-                $subdirname2 = $filename[1];
+                    $subdirname1 = $filename[0];
+                    $subdirname2 = $filename[1];
 
-                if (!file_exists('./uploads/' .
-                    $subdirname1 . '/' .
-                    $subdirname2)
-                ) {
-                    mkdir('./uploads/' .
+                    if (!file_exists('./uploads/' .
                         $subdirname1 . '/' .
-                        $subdirname2, 0777, true);
+                        $subdirname2)
+                    ) {
+                        mkdir('./uploads/' .
+                            $subdirname1 . '/' .
+                            $subdirname2, 0777, true);
+                    }
+
+                    move_uploaded_file($_FILES['userFile']['tmp_name'],
+                        './uploads/' .
+                        $subdirname1 . '/' .
+                        $subdirname2 . '/' .
+                        $filename . '.' . $ext);
+
+                    if (file_exists('./uploads/' .
+                        $subdirname1 . '/' .
+                        $subdirname2 . '/' .
+                        $filename . '.' . $ext)) {
+
+                        $imageKey = $this->generateKey();
+                        $filename = $filename . '.' . $ext;
+                        $sql = $this->files_model->insertNewFile($realName, $filename, $imageKey);
+                    }
                 }
-
-                move_uploaded_file($_FILES['userFile']['tmp_name'],
-                    './uploads/' .
-                    $subdirname1 . '/' .
-                    $subdirname2 . '/' .
-                    $filename . '.' . $ext);
-
-                if (file_exists('./uploads/' .
-                    $subdirname1 . '/' .
-                    $subdirname2 . '/' .
-                    $filename . '.' . $ext)) {
-
-                    $imageKey = $this->generateKey();
-                    $filename = $filename . '.' . $ext;
-                    $sql = $this->files_model->insertNewFile($realName,$filename,$imageKey);
-                }
+            } else {
+                echo 'Hello, ' . $_SESSION['login'] . '. Please, select file to upload';
             }
-        } else {
-            echo 'Please Select file to Upload';
+
+            $row = $this->files_model->getAllFilesUser();
+
+            $this->load->view('header');
+            $this->load->view('files/filesharing', ['files' => $row]);
+            $this->load->view('footer');
         }
-
-        $row = $this->files_model->getAllFilesUser();
-
-        $this->load->view('header');
-        $this->load->view('files/filesharing', ['files' => $row]);
-        $this->load->view('footer');
     }
     public function delete()
     {

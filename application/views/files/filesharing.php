@@ -1,5 +1,3 @@
-<?php
-if(isset($_SESSION['id']) && isset($_SESSION['login'])) { ?>
 <form method="post" enctype="multipart/form-data">
     <input type="file" name="userFile">
     <button type="submit">Submit</button>
@@ -12,7 +10,7 @@ if(isset($_SESSION['id']) && isset($_SESSION['login'])) { ?>
     <a href="download?name=' . $row->image_key . '">Link</a>
     <input value="localhost/files/download?name=' . $row->image_key . '"> <br/>';
     }
-} ?>
+?>
 
 
 
