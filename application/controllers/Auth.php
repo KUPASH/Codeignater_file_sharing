@@ -91,4 +91,11 @@ class Auth extends CI_Controller {
             $this->load->view('footer');
         }
     }
+    public function logout()
+    {
+        session_start();
+        session_unset();
+        session_destroy();
+        header('location: /auth');
+    }
 }

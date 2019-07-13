@@ -108,11 +108,4 @@ class Files extends CI_Controller
         }
         header('Location: /files/filesharing');
     }
-
-    public function logout()
-    {
-        session_unset();
-        session_destroy();
-        header('location: /auth');
-    }
 }
